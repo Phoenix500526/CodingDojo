@@ -23,6 +23,30 @@ struct Int2Type{
 	enum { value = n };
 };
 
+template <typename T>
+struct Type2Type{
+	using OriginalType = T;
+};
+
+template <typename TList> struct TList_Trait;
+template <>
+struct TList_Trait<NullType>{
+	using Head = NullType;
+	using Tail = NullType;
+};
+template <typename H>
+struct TList_Trait<Typelist<H>>
+{
+	using Head = H;
+	using Tail = NullType;
+};
+template <typename H, typename... T>
+struct TList_Trait<Typelist<H, T...>>
+{
+	using Head = H;
+	using Tail = Typelist<T...>;
+};
+
 #define TYPELIST(...) Typelist<__VA_ARGS__>
 
 

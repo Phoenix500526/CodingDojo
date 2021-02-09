@@ -56,6 +56,16 @@ int main(){
 	cout << "Length of tl_2 is " << Length<tl_2>::value << '\n';
 	TList_Printer<tl_3>();
 	cout << "Length of tl_3 is " << Length<tl_3>::value << '\n';
+	cout << "\nTList_Trait test : \n";
+	cout << "tl_0 Head : " << type_id_with_cvr<typename TList_Trait<tl_0>::Head>().pretty_name() << ", Tail: "
+		 << type_id_with_cvr<typename TList_Trait<tl_0>::Tail>().pretty_name() << '\n';
+	cout << "tl_1 Head : " << type_id_with_cvr<typename TList_Trait<tl_1>::Head>().pretty_name() << ", Tail: "
+		 << type_id_with_cvr<typename TList_Trait<tl_1>::Tail>().pretty_name() << '\n';
+	cout << "tl_2 Head : " << type_id_with_cvr<typename TList_Trait<tl_2>::Head>().pretty_name() << ", Tail: "
+		 << type_id_with_cvr<typename TList_Trait<tl_2>::Tail>().pretty_name() << '\n';
+	cout << "tl_3 Head : " << type_id_with_cvr<typename TList_Trait<tl_3>::Head>().pretty_name() << ", Tail: "
+		 << type_id_with_cvr<typename TList_Trait<tl_3>::Tail>().pretty_name() << '\n';
+
 	cout << type_id_with_cvr<typename TypeAt<tl_3, 0>::Result>().pretty_name() << ','
 		 << type_id_with_cvr<typename TypeAt<tl_3, 1>::Result>().pretty_name() << ','
 		 << type_id_with_cvr<typename TypeAt<tl_3, 2>::Result>().pretty_name() << '\n';
