@@ -209,6 +209,37 @@ public:
 	using Result = typename Append<Head, L2>::Result;
 };
 
+template <typename TList, typename Base> struct MostDerived;
+template <typename Base>
+struct MostDerived<NullType, Base>
+{
+	using Result = Base;
+};
+template <typename Head, typename... Tail, typename Base>
+struct MostDerived<Typelist<Head, Tail...>, Base>
+{
+private:
+	using Candidate = typename MostDerived<Typelist<Tail...>, Base>::Result;
+public:
+	using Result = typename Select<std::is_base_of<Candidate, Head>::value, Head, Candidate>::Result;
+};
+
+template <typename TList> struct DerivedToFront;
+template <>
+struct DerivedToFront<NullType>
+{
+	using Result = NullType;
+};
+template <typename Head, typename... Tail>
+struct DerivedToFront<Typelist<Head, Tail...>>
+{
+private:
+	using TheMostDerived = typename MostDerived<Typelist<Tail...>, Head>::Result;
+	using L_1 = typename Replace<Typelist<Tail...>, TheMostDerived, Head>::Result;
+public:
+	using Result = typename Append<TheMostDerived, typename DerivedToFront<L_1>::Result>::Result;
+};
+
 template <typename TList, template<class> class Unit> class GenScatterHierarchy;
 template <template<class> class Unit>
 class GenScatterHierarchy<NullType, Unit>{};

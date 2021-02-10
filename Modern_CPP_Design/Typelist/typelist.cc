@@ -112,6 +112,15 @@ int main(){
 	cout << "\nNoDuplicate test : \n";
 	TList_Printer<tl_4>();
 	TList_Printer<typename NoDuplicate<tl_4>::Result>();
+
+	using tl_5 = TYPELIST(Scrollbar, Widget, GraphicButton, Button);
+	cout << "\nThe most Derived test : \n"
+		<< type_id_with_cvr<typename MostDerived<tl_5, Widget>::Result>().pretty_name() << ','
+		<< type_id_with_cvr<typename MostDerived<tl_5, Scrollbar>::Result>().pretty_name() << ','
+		<< type_id_with_cvr<typename MostDerived<tl_5, Button>::Result>().pretty_name() << ','
+		<< type_id_with_cvr<typename MostDerived<tl_5, GraphicButton>::Result>().pretty_name() << '\n';
+	TList_Printer<typename DerivedToFront<tl_5>::Result>();
+
 	using ScatterHierarchy = GenScatterHierarchy<TYPELIST(int, float, double), Holder>;
 	ScatterHierarchy test{1024, 3.14, 2.71};
 	cout << sizeof(test) << " : " << static_cast<Holder<int>&>(test).value_ 
