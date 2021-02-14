@@ -30,6 +30,12 @@ struct GraphicButton : Button{};
 struct Scrollbar : Widget{};
 struct Window{};
 
+struct Dummy
+{
+	int a, b, c, d, e;
+	double f, g, h;
+};
+
 template <typename T>
 struct Holder{
 	T value_;
@@ -42,6 +48,9 @@ public:
 		cout << type_id_with_cvr<T>().pretty_name() << '\n';
 	}
 };
+
+template <typename TList, std::size_t idx>
+using Param_t = typename TypeTraits<TList, idx>::ParameterType;
 
 int main(){
 	using tl_0 = TYPELIST();
@@ -133,5 +142,18 @@ int main(){
 
 	using LinearHierarchy = GenLinearHierarchy<TYPELIST(Window, Button, Scrollbar), EventHandler>;
 	LinearHierarchy linear;
+
+	using tl_6 = Typelist<char*, char const&, char&,  const char* >;
+	TList_Printer<tl_6>();
+
+	using tl_7 = Typelist<Param_t<tl_6, 0>, Param_t<tl_6, 1>, Param_t<tl_6, 2>, Param_t<tl_6, 3>>;
+	TList_Printer<tl_7>();
+
+	using tl_8 = Typelist<Window, Window&, const Window, const Window&, Dummy, Dummy&, const Dummy, const Dummy&>;
+	TList_Printer<tl_8>();
+
+	using tl_9 = Typelist<Param_t<tl_8, 0>, Param_t<tl_8, 1>, Param_t<tl_8, 2>, Param_t<tl_8, 3>,
+						Param_t<tl_8, 4>, Param_t<tl_8, 5>, Param_t<tl_8, 6>, Param_t<tl_8, 7> >;
+	TList_Printer<tl_9>();
 	return 0;
 }

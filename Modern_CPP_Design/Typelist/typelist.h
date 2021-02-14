@@ -240,6 +240,40 @@ public:
 	using Result = typename Append<TheMostDerived, typename DerivedToFront<L_1>::Result>::Result;
 };
 
+template <typename T> struct TypeTraits_Impl;
+template <typename T>
+struct TypeTraits_Impl<const T>
+{
+	using Result = typename Select<(sizeof(T) > sizeof(void*)), const T&, const T>::Result;
+};
+
+template <typename T>
+struct TypeTraits_Impl
+{
+	using Result = typename Select<(sizeof(T) > sizeof(void*)), T&, T>::Result;
+};
+
+template <typename T>
+struct TypeTraits_Impl<T&>
+{
+	using Result = T&;
+};
+
+template <typename T>
+struct TypeTraits_Impl<const T&>
+{
+	using Result = const T&;
+};
+
+template <typename TList, std::size_t index> 
+struct TypeTraits{
+private:
+	using ParameterType_Impl = typename TypeTraits_Impl<typename TypeAt<TList, index>::Result>::Result;
+public:
+	using ParameterType = typename Select<(index >= static_cast<std::size_t>(Length<TList>::value)), 
+						EmptyType, ParameterType_Impl>::Result;
+};
+
 template <typename TList, template<class> class Unit> class GenScatterHierarchy;
 template <template<class> class Unit>
 class GenScatterHierarchy<NullType, Unit>{};
