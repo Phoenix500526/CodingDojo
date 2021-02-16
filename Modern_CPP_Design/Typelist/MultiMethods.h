@@ -1,9 +1,11 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 #include "TypeInfo.h"
 #include "typelist.h"
 #include "AssocVector.h"
+#include "Functor.h"
 
 template 
 <
@@ -98,6 +100,74 @@ public:
     }
 };
 
+
+template <
+    class BaseLhs,
+    class BaseRhs = BaseLhs,
+    typename ResultType = void,
+    typename CallbackType = std::function<ResultType(BaseLhs&, BaseRhs&)>
+>
+class BasicFastDispatcher
+{
+private:
+    using Row = std::vector<CallbackType>;
+    using Matrix = std::vector<Row>;
+    Matrix callback_;
+    int columns_;
+public:
+    template <class SomeLhs, class SomeRhs>
+    void Add(CallbackType pFunc){
+        int& idxLhs = SomeLhs::GetClassIndexStatic();
+        if (idxLhs < 0){
+            callback_.push_back(Row());
+            idxLhs = callback_.size() - 1;
+        }else if(callback_.size() <= idxLhs){
+            callback_.resize(idxLhs + 1);
+        }
+        Row& thisRow = callback_[idxLhs];
+        int& idxRhs = SomeRhs::GetClassIndexStatic();
+        if(idxRhs < 0){
+            thisRow.resize(++columns_);
+            idxRhs = thisRow.size() - 1;
+        }else if(thisRow.size() <= idxRhs){
+            thisRow.resize(idxRhs + 1);
+        }
+        thisRow[idxRhs] = pFunc;
+    }
+
+    template <class SomeLhs, class SomeRhs>
+    bool Remove(){
+        int& idxLhs = SomeLhs::GetClassIndexStatic();
+        int& idxRhs = SomeRhs::GetClassIndexStatic();
+        callback_[idxLhs][idxRhs] = nullptr;
+        return nullptr == callback_[idxLhs][idxRhs];
+    }
+
+    BasicFastDispatcher() : columns_(0){}
+    ResultType Go(BaseLhs& lhs, BaseRhs& rhs){
+        int idxLhs = lhs.GetClassIndex();
+        int idxRhs = rhs.GetClassIndex();
+        if(idxLhs < 0 || idxLhs >= callback_.size() || idxRhs > 0 || idxRhs >= callback_[idxLhs].size()
+                || callback_[idxLhs][idxRhs] == nullptr){
+            throw std::runtime_error("Function Not Found");
+        }
+        return callback_[idxLhs][idxRhs](lhs, rhs);
+    }
+    
+};
+
+#define IMPLEMENT_INDEXABLE_CLASS(SomeClass)        \
+static int& GetClassIndexStatic(){                  \
+    static int index = -1;                          \
+    return index;                                   \
+}                                                   \
+virtual int& GetClassIndex(){                       \
+    assert( typeid(*this) == typeid(SomeClass));    \
+    return GetClassIndexStatic();                   \
+}
+
+
+// StaticCast 和 DynamicCast 作为 Policy 必须是对象类型
 template <class To, class From>
 struct StaticCast
 {
@@ -135,7 +205,7 @@ struct FnDispatcherHelper
 template <class BaseLhs, class BaseRhs = BaseLhs,
           typename ResultType = void,
           template <class, class> class CastingPolicy = DynamicCast,
-          template <class, class, class, class> class DispatcherBackend = BasicDispatcher>
+          template <class, class, class, class> class DispatcherBackend = BasicFastDispatcher>
 class FnDispatcher
 {
     DispatcherBackend<BaseLhs, BaseRhs, ResultType, ResultType (*)(BaseLhs&, BaseRhs&)> backEnd_;
@@ -163,4 +233,76 @@ public:
         return backEnd_.Go(lhs, rhs);
     }
     
+};
+
+template <class BaseLhs, class BaseRhs,
+          class SomeLhs, class SomeRhs,
+          typename ResultType,
+          class CastLhs, class CastRhs,
+          class Fun, bool SwapArgs>
+class FunctorDispatcherHelper
+{
+private:
+    Fun fun_;
+    ResultType Fire(BaseLhs& lhs, BaseRhs& rhs, Int2Type<false>){
+        return fun_(CastLhs::Cast(lhs), CastRhs::Cast(rhs));
+    }
+    ResultType Fire(BaseLhs& lhs, BaseRhs& rhs, Int2Type<true>){
+        return fun_(CastLhs::Cast(rhs), CastRhs::Cast(lhs));
+    }
+public:
+    FunctorDispatcherHelper(const Fun& fun) : fun_(fun){}
+    ResultType operator()(BaseLhs& lhs, BaseRhs& rhs){
+        return Fire(lhs, rhs, Int2Type<SwapArgs>());
+    }
+};
+
+template <class BaseLhs, class BaseRhs = BaseLhs,
+          typename ResultType = void,
+          template <class, class> class CastingPolicy = DynamicCast,
+          template <class, class, class, class> class DispatcherBackend = BasicDispatcher>
+class FunctorDispatcher
+{
+    using ArgsList = TYPELIST(BaseLhs&, BaseRhs&);
+    using FunctorType = Functor<ResultType, ArgsList>;
+    DispatcherBackend<BaseLhs, BaseRhs, ResultType, FunctorType> backEnd_;
+public:
+
+    template <class SomeLhs, class SomeRhs, class Fun>
+    void Add(const Fun& fun){
+        using Adapter = FunctorDispatcherHelper<
+            BaseLhs, BaseRhs,
+            SomeLhs, SomeRhs,
+            ResultType,
+            CastingPolicy<SomeLhs, BaseLhs>,
+            CastingPolicy<SomeRhs, BaseRhs>,
+            Fun, false
+        >;
+        backEnd_.template Add<SomeLhs, SomeRhs>(static_cast<FunctorType>(Adapter(fun)));
+    }
+
+    template <class SomeLhs, class SomeRhs, bool symmetric, class Fun>
+    void Add(const Fun& fun){
+        Add<SomeLhs, SomeRhs>(fun);
+        if(symmetric){
+            using AdapterR = FunctorDispatcherHelper<
+                BaseLhs, BaseLhs,
+                SomeLhs, SomeRhs,
+                ResultType,
+                CastingPolicy<SomeLhs, BaseLhs>,
+                CastingPolicy<SomeRhs, BaseLhs>,
+                Fun, true
+            >;
+            backEnd_.template Add<SomeRhs, SomeLhs>(static_cast<FunctorType>(AdapterR(fun)));
+        }
+    }
+    
+    template <class SomeLhs, class SomeRhs>
+    void Remove(){
+        backEnd_.template Remove<SomeLhs, SomeRhs>();
+    }
+
+    ResultType Go(BaseLhs& lhs, BaseRhs& rhs){
+        return backEnd_.Go(lhs, rhs);
+    }
 };

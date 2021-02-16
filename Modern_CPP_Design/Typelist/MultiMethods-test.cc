@@ -5,20 +5,25 @@ using namespace std;
 
 struct Shape{
 	virtual ~Shape(){}
+	IMPLEMENT_INDEXABLE_CLASS(Shape)
 };
 struct Retangle : public Shape{
 	virtual ~Retangle(){}
+	IMPLEMENT_INDEXABLE_CLASS(Retangle)
 };
 struct Ellipse : public Shape{
 	virtual ~Ellipse(){}
+	IMPLEMENT_INDEXABLE_CLASS(Ellipse)
 };
 
 struct Poly : public Shape{
 	virtual ~Poly(){}
+	IMPLEMENT_INDEXABLE_CLASS(Poly)
 };
 
 struct RoundRetangle : public Retangle{
 	virtual ~RoundRetangle(){}
+	IMPLEMENT_INDEXABLE_CLASS(RoundRetangle)
 };
 
 class HatchingExecutor
@@ -62,6 +67,20 @@ void HatchEllipsePoly(Ellipse& lhs, Poly& rhs){
 	return;
 }
 
+struct HatchRetangleEllipse_1
+{
+	void operator()(Retangle& lhs, Ellipse& rhs){
+		cout << "HatchRetangleEllipse_1:" << typeid(lhs).name() << " , " << typeid(rhs).name() << '\n';
+	}
+};
+
+struct HatchRoundRantanglePoly
+{
+	void operator()(RoundRetangle& lhs, Poly& rhs){
+		cout << "HatchRoundRantanglePoly:" << typeid(lhs).name() << " , " << typeid(rhs).name() << '\n';
+	}
+};
+
 int main(){
 	using SDispatcher = StaticDispatcher<HatchingExecutor, Shape, TYPELIST(RoundRetangle, Retangle, Ellipse)>;
 	Retangle ret;
@@ -86,6 +105,18 @@ int main(){
 	FnDispatcher<Shape> fn_dispatcher;
 	fn_dispatcher.Add<Ellipse, Poly,HatchEllipsePoly>();
 	fn_dispatcher.Go(ell, pol);
+
+	FunctorDispatcher<Shape> fctor_dispatcher;
+	fctor_dispatcher.Add<Retangle, Ellipse, true>(HatchRetangleEllipse_1());
+	fctor_dispatcher.Go(ret, ell);
+	fctor_dispatcher.Go(ell, ret);
+	fctor_dispatcher.Add<RoundRetangle, Poly>(HatchRoundRantanglePoly());
+	fctor_dispatcher.Go(rou, pol);
+
+	using BFDispatcher = BasicFastDispatcher<Shape>;
+	BFDispatcher bf_dispatcher;
+	bf_dispatcher.Add<Retangle, Poly>(HatchRetanglePoly);
+	bf_dispatcher.Go(ret, pol);
 	return 0;
 
 }
