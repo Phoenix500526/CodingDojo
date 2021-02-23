@@ -3,6 +3,8 @@
 
 #include "service.h"
 #include "sink.h"
+#include "transform.h"
+#include "trim.h"
 
 using namespace std;
 using namespace reactive::operators;
@@ -25,7 +27,7 @@ int main(int argc, char const* argv[]) {
     auto sink_to_cerr =
         sink([](const auto& message) { std::cerr << message << '\n'; });
     // Starting the Boost.ASIO service
-    auto pipeline = service(event_loop) | sink_to_cerr;
+    auto pipeline = service(event_loop) | transform(trim) | sink_to_cerr;
     cerr << "Service is running...\n";
     event_loop.run();
     return 0;
