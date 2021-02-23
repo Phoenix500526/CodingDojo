@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "filter.h"
+#include "join.h"
 #include "service.h"
 #include "sink.h"
 #include "transform.h"
@@ -26,16 +27,17 @@ ostream& operator<<(std::ostream& out, const bookmark_t& page) {
 
 int main(int argc, char const* argv[]) {
     boost::asio::io_service event_loop;
-    std::vector<string> res;
     auto sink_to_cerr =
-        sink([&res](const auto& message) { std::cerr << message << '\n'; });
+        sink([](const auto& message) { std::cerr << message << '\n'; });
     // Starting the Boost.ASIO service
-    auto pipeline =
-        reactive::values<string>{"", "# Helo  ", "Halo ", "#  World"} |
-        filter([](const string& message) {
-            return message.length() > 0 && message[0] != '#';
-        }) |
-        transform(trim) | sink_to_cerr;
+    auto pipeline = reactive::values<unsigned short>{10086, 10011, 10010} |
+                    transform([&event_loop](unsigned short port) {
+                        return service(event_loop, port);
+                    }) |
+                    join() | filter([](const string& message) {
+                        return message.length() > 0 && message[0] != '#';
+                    }) |
+                    transform(trim) | sink_to_cerr;
     cerr << "Service is running...\n";
     event_loop.run();
     return 0;
