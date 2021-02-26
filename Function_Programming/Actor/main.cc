@@ -2,6 +2,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+#include "bookmark.h"
 #include "expected.h"
 #include "filter.h"
 #include "join.h"
@@ -15,28 +16,6 @@
 using namespace std;
 using namespace reactive::operators;
 using json = nlohmann::json;
-
-struct bookmark_t {
-    string url;
-    string text;
-};
-
-using expected_json = expected<json, std::exception_ptr>;
-using expected_bookmark = expected<bookmark_t, std::exception_ptr>;
-
-string to_string(const bookmark_t& page) {
-    return "[" + page.text + "](" + page.url + ")";
-}
-
-ostream& operator<<(std::ostream& out, const bookmark_t& page) {
-    return out << '[' << page.text << "](" << page.url << ")";
-}
-
-expected_bookmark bookmark_from_json(const json& data) {
-    return mtry([&] {
-        return bookmark_t{data.at("FirstURL"), data.at("Text")};
-    });
-}
 
 int main(int argc, char const* argv[]) {
     std::ios_base::sync_with_stdio(false);
