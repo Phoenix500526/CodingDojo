@@ -121,14 +121,25 @@ public:
                     switch (which_player) {
                         case player::player_1:
                             if (state.leading_player != player::player_1) {
-                                ++state.other_player_points;
+                                if (state.other_player_points ==
+                                    points::thirty) {
+                                    m_state = deuce{};
+                                } else {
+                                    ++state.other_player_points;
+                                }
                             } else {
                                 m_state = gameover{state.leading_player};
                             }
                             break;
                         case player::player_2:
                             if (state.leading_player != player::player_2) {
-                                ++state.other_player_points;
+                                if (state.other_player_points ==
+                                    points::thirty) {
+                                    m_state = deuce{};
+                                } else {
+                                    ++state.other_player_points;
+                                }
+
                             } else {
                                 m_state = gameover{state.leading_player};
                             }

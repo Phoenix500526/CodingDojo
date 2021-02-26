@@ -132,3 +132,13 @@ TEST_F(TennisTest, OneWinPointsAndUpdateHisStatesUnderFortyScoring) {
     EXPECT_TRUE(std::holds_alternative<gameover>(test_2_state));
     EXPECT_EQ(*(std::get_if<gameover>(&test_2_state)), player_2_win);
 }
+
+TEST_F(TennisTest, FortyScoringChangeToDeuce) {
+    tennis::tennis_t test;
+    for (int i = 0; i < 3; ++i) {
+        test.point_for(player::player_1);
+        test.point_for(player::player_2);
+    }
+    auto test_state = test.get_state();
+    EXPECT_TRUE(std::holds_alternative<deuce>(test_state));
+}
