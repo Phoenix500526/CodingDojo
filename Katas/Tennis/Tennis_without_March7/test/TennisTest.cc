@@ -164,4 +164,9 @@ TEST_F(TennisTest, DeuceChangeToAdvantageAndAdvantageChangeToWin) {
 
     test_state = test.point_for(player::player_1);
     EXPECT_TRUE(std::holds_alternative<deuce>(test_state));
+
+    test_state = test.point_for(player::player_1);
+    test_state = test.point_for(player::player_1);
+    EXPECT_TRUE(std::holds_alternative<gameover>(test_state));
+    EXPECT_EQ(*(std::get_if<gameover>(&test_state)), player_1_win);
 }

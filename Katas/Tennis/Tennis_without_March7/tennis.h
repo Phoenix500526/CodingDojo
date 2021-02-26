@@ -171,7 +171,7 @@ public:
                             break;
                     }
                 },
-                [&](detail::gameover& state) { using namespace detail; },
+                [&](detail::gameover& state) {},
             },
             m_state);
         return get_state();
