@@ -26,7 +26,9 @@ public:
           fifteen_forty{player::player_2, points::fifteen},
           thirty_forty{player::player_2, points::thirty},
           player_1_advantage{player::player_1},
-          player_2_advantage{player::player_2} {}
+          player_2_advantage{player::player_2},
+          player_1_win{player::player_1},
+          player_2_win{player::player_2} {}
 
 protected:
     normal_scoring love_love;
@@ -48,6 +50,9 @@ protected:
 
     advantage player_1_advantage;
     advantage player_2_advantage;
+
+    gameover player_1_win;
+    gameover player_2_win;
 };
 
 TEST_F(TennisTest, InitialStateShouldBeZeroToZero) {
@@ -58,7 +63,7 @@ TEST_F(TennisTest, InitialStateShouldBeZeroToZero) {
     EXPECT_EQ(test_1_points, love_love);
 }
 
-TEST_F(TennisTest, OneWinPointsAndUpdateHisStates) {
+TEST_F(TennisTest, OneWinPointsAndUpdateHisStatesUnderNormalScoring) {
     tennis::tennis_t test_2;
     tennis::tennis_t test_3;
 
@@ -91,4 +96,39 @@ TEST_F(TennisTest, OneWinPointsAndUpdateHisStates) {
     test_3_state = test_3.point_for(player::player_2);
     EXPECT_TRUE(std::holds_alternative<forty_scoring>(test_3_state));
     EXPECT_EQ(*(std::get_if<forty_scoring>(&test_3_state)), love_forty);
+}
+
+TEST_F(TennisTest, OneWinPointsAndUpdateHisStatesUnderFortyScoring) {
+    tennis::tennis_t test_1, test_2;
+    for (int i = 0; i < 3; ++i) {
+        test_1.point_for(player::player_1);
+        test_2.point_for(player::player_2);
+    }
+    auto test_1_state = test_1.get_state();
+    auto test_2_state = test_2.get_state();
+
+    ASSERT_TRUE(std::holds_alternative<forty_scoring>(test_1_state));
+    ASSERT_EQ(*(std::get_if<forty_scoring>(&test_1_state)), forty_love);
+    ASSERT_TRUE(std::holds_alternative<forty_scoring>(test_2_state));
+    ASSERT_EQ(*(std::get_if<forty_scoring>(&test_2_state)), love_forty);
+
+    test_1_state = test_1.point_for(player::player_2);
+    EXPECT_EQ(*(std::get_if<forty_scoring>(&test_1_state)), forty_fifteen);
+
+    test_1_state = test_1.point_for(player::player_2);
+    EXPECT_EQ(*(std::get_if<forty_scoring>(&test_1_state)), forty_thirty);
+
+    test_2_state = test_2.point_for(player::player_1);
+    EXPECT_EQ(*(std::get_if<forty_scoring>(&test_2_state)), fifteen_forty);
+
+    test_2_state = test_2.point_for(player::player_1);
+    EXPECT_EQ(*(std::get_if<forty_scoring>(&test_2_state)), thirty_forty);
+
+    test_1_state = test_1.point_for(player::player_1);
+    EXPECT_TRUE(std::holds_alternative<gameover>(test_1_state));
+    EXPECT_EQ(*(std::get_if<gameover>(&test_1_state)), player_1_win);
+
+    test_2_state = test_2.point_for(player::player_2);
+    EXPECT_TRUE(std::holds_alternative<gameover>(test_2_state));
+    EXPECT_EQ(*(std::get_if<gameover>(&test_2_state)), player_2_win);
 }

@@ -43,6 +43,13 @@ struct advantage {
     }
 };
 
+struct gameover {
+    player winner;
+    inline bool operator==(const gameover& other) const {
+        return winner == other.winner;
+    }
+};
+
 template <typename E, E first, E head>
 void advanceEnum(E& v) {
     if (v == head) v = first;
@@ -110,12 +117,31 @@ public:
                     }
                 },
                 [&](detail::forty_scoring& state) {
-
+                    using namespace detail;
+                    switch (which_player) {
+                        case player::player_1:
+                            if (state.leading_player != player::player_1) {
+                                ++state.other_player_points;
+                            } else {
+                                m_state = gameover{state.leading_player};
+                            }
+                            break;
+                        case player::player_2:
+                            if (state.leading_player != player::player_2) {
+                                ++state.other_player_points;
+                            } else {
+                                m_state = gameover{state.leading_player};
+                            }
+                            break;
+                    }
                 },
                 [&](detail::deuce& state) {
 
                 },
                 [&](detail::advantage& state) {
+
+                },
+                [&](detail::gameover& state) {
 
                 },
             },
@@ -125,7 +151,7 @@ public:
 
 private:
     std::variant<detail::normal_scoring, detail::forty_scoring, detail::deuce,
-                 detail::advantage>
+                 detail::advantage, detail::gameover>
         m_state;
 };
 
