@@ -147,14 +147,31 @@ public:
                     }
                 },
                 [&](detail::deuce& state) {
-
+                    using namespace detail;
+                    m_state = advantage{which_player};
                 },
                 [&](detail::advantage& state) {
-
+                    using namespace detail;
+                    switch (which_player) {
+                        case player::player_1:
+                            if (state.player_with_advantage !=
+                                player::player_1) {
+                                m_state = deuce{};
+                            } else {
+                                m_state = gameover{state.player_with_advantage};
+                            }
+                            break;
+                        case player::player_2:
+                            if (state.player_with_advantage !=
+                                player::player_2) {
+                                m_state = deuce{};
+                            } else {
+                                m_state = gameover{state.player_with_advantage};
+                            }
+                            break;
+                    }
                 },
-                [&](detail::gameover& state) {
-
-                },
+                [&](detail::gameover& state) { using namespace detail; },
             },
             m_state);
         return get_state();

@@ -142,3 +142,26 @@ TEST_F(TennisTest, FortyScoringChangeToDeuce) {
     auto test_state = test.get_state();
     EXPECT_TRUE(std::holds_alternative<deuce>(test_state));
 }
+
+TEST_F(TennisTest, DeuceChangeToAdvantageAndAdvantageChangeToWin) {
+    tennis::tennis_t test;
+    for (int i = 0; i < 3; ++i) {
+        test.point_for(player::player_1);
+        test.point_for(player::player_2);
+    }
+    auto test_state = test.get_state();
+    ASSERT_TRUE(std::holds_alternative<deuce>(test_state));
+    test_state = test.point_for(player::player_1);
+    EXPECT_TRUE(std::holds_alternative<advantage>(test_state));
+    EXPECT_EQ(*(std::get_if<advantage>(&test_state)), player_1_advantage);
+
+    test_state = test.point_for(player::player_2);
+    EXPECT_TRUE(std::holds_alternative<deuce>(test_state));
+
+    test_state = test.point_for(player::player_2);
+    EXPECT_TRUE(std::holds_alternative<advantage>(test_state));
+    EXPECT_EQ(*(std::get_if<advantage>(&test_state)), player_2_advantage);
+
+    test_state = test.point_for(player::player_1);
+    EXPECT_TRUE(std::holds_alternative<deuce>(test_state));
+}
