@@ -1,2 +1,0 @@
-project(Tennis_without_March7)
-add_subdirectory(test)
