@@ -4,7 +4,8 @@
 
 using namespace std;
 
-TEST(LeapYearUnitTest, LeapYearCanBeDividedBy400){
+
+TEST(LeapYearUnitTest, LeapYearCanBeDividedBy400) {
     ASSERT_TRUE(is_leap_year(400));
     ASSERT_TRUE(is_leap_year(800));
     ASSERT_TRUE(is_leap_year(1200));
@@ -13,7 +14,8 @@ TEST(LeapYearUnitTest, LeapYearCanBeDividedBy400){
     ASSERT_FALSE(is_leap_year(500));
 }
 
-TEST(LeapYearUnitTest, LeapYearCanBeDividedBy4ButNot100){
+
+TEST(LeapYearUnitTest, LeapYearCanBeDividedBy4ButNot100) {
     ASSERT_TRUE(is_leap_year(2008));
     ASSERT_TRUE(is_leap_year(2012));
     ASSERT_TRUE(is_leap_year(2016));

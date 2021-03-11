@@ -1,53 +1,61 @@
 #pragma once
-#include <variant>
-#include <cstdint>
 #include <cassert>
+#include <cstdint>
+#include <iostream>
+#include <variant>
+#include <vector>
 
-namespace detail{
-constexpr std::uint8_t ten_pins = 10;
-enum class bonus_t
-{
-	zero,
-	one,
-	two,
+namespace detail {
+constexpr std::uint8_t TEN_PINS = 10;
+
+enum class bonus_t {
+    zero,
+    one,
+    two,
 };
 
-struct game_start{
-	/*const*/ bonus_t bonus = bonus_t::zero;
+// 状态机的起点和终点
+struct game_start {
+    inline bool operator==(game_start rhs) const { return true; }
 };
-struct game_over{
-	bonus_t bonus = bonus_t::zero;
-};
-
-struct strike
-{
-	bonus_t bonus = bonus_t::two;
+struct game_over {
+    inline bool operator==(game_over rhs) const { return true; }
 };
 
-struct spare
-{
-	bonus_t bonus = bonus_t::one;
+// 普通得分阶段
+struct strike {
+    inline bool operator==(strike rhs) const { return true; }
+};
+struct spare {
+    spare(std::uint8_t fir, std::uint8_t sec)
+        : first_score(fir), second_score(sec) {
+        assert(first_score + second_score == 10);
+    }
+    inline bool operator==(spare rhs) const {
+        return first_score == rhs.first_score &&
+               second_score == rhs.second_score;
+    }
+    std::uint8_t first_score;
+    std::uint8_t second_score;
+};
+struct miss {
+    miss(std::uint8_t fir = 0, std::uint8_t sec = 0)
+        : first_score(fir), second_score(sec) {
+        assert((first_score < 10) && (second_score < 10) &&
+               (first_score + second_score < 10));
+    }
+    inline bool operator==(miss rhs) const {
+        return first_score == rhs.first_score &&
+               second_score == rhs.second_score;
+    }
+    std::uint8_t first_score;
+    std::uint8_t second_score;
 };
 
-struct miss{
-	miss(std::uint8_t fir = 0, std::uint8_t sec = 0):first_point(fir), second_point(sec){
-		assert((first_point < 10) && (second_point < 10) && (first_point + second_point < 10));
-	}
-	std::uint8_t first_point;
-	std::uint8_t second_point;
-	bonus_t bonus = bonus_t::zero;
+// 加时清算阶段
+struct clear {
+    inline bool operator==(clear rhs) const { return true; }
 };
-
-template <class STATE>
-inline bool operator==(STATE lhs, STATE rhs){
-	return lhs.bonus == rhs.bonus;
-}
-
-template <>
-bool operator==<miss>(miss lhs, miss rhs){
-	return lhs.first_point == rhs.first_point && lhs.second_point == rhs.second_point && lhs.bonus == rhs.bonus;
-}
-
 
 template <typename... Ts>
 struct overloaded : Ts... {
@@ -57,68 +65,114 @@ struct overloaded : Ts... {
 template <typename... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-}	// namespace detail
+}  // namespace detail
 
-
-class bowling_t
-{
+class bowling_t {
 private:
-	using state_t = std::variant<detail::game_start, detail::strike, detail::spare, detail::miss, detail::game_over>;
-	state_t m_state;
-	detail::bonus_t m_bonus;
-	int m_frameID;
-	int m_score;
+    using state_t =
+        std::variant<detail::game_start, detail::strike, detail::spare,
+                     detail::miss, detail::clear, detail::game_over>;
+    state_t m_state;
+    std::vector<detail::bonus_t> m_bonus;
+    const int m_maxFrame;
+    int m_frameID;
+    int m_score;
+
+    inline void clear_bonus(int frameID, std::uint8_t score) {
+        using namespace detail;
+        for (int i = 0; i < 2; ++i) {
+            --frameID;
+            if (frameID <= 0) {
+                break;
+            }
+            switch (m_bonus[frameID]) {
+                case bonus_t::zero:
+                    break;
+                case bonus_t::one:
+                    m_score += score;
+                    m_bonus[frameID] = bonus_t::zero;
+                    break;
+                case bonus_t::two:
+                    m_score += score;
+                    m_bonus[frameID] = bonus_t::one;
+                    break;
+            }
+        }
+    }
+
+    inline void normal_stage(const state_t& result) {
+        using namespace detail;
+        if (std::holds_alternative<miss>(result)) {
+            auto temp = std::get<miss>(result);
+            m_score += temp.first_score + temp.second_score;
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+            m_state = m_frameID < m_maxFrame ? result : game_over{};
+        } else if (std::holds_alternative<strike>(result)) {
+            m_score += TEN_PINS;
+            m_bonus[m_frameID] = bonus_t::two;
+            clear_bonus(m_frameID, TEN_PINS);
+            m_state = m_frameID < m_maxFrame ? result : clear{};
+        } else {
+            auto temp = std::get<spare>(result);
+            m_score += TEN_PINS;
+            m_bonus[m_frameID] = bonus_t::one;
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+            m_state = m_frameID < m_maxFrame ? result : clear{};
+        }
+    }
+
+    inline void clear_stage(const state_t& result) {
+        using namespace detail;
+        if (std::holds_alternative<miss>(result)) {
+            auto temp = std::get<miss>(result);
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+        } else if (std::holds_alternative<strike>(result)) {
+            clear_bonus(m_frameID, TEN_PINS);
+        } else {
+            auto temp = std::get<spare>(result);
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+        }
+        if (m_bonus[m_maxFrame] == bonus_t::zero) {
+            m_state = game_over{};
+        } else {
+            m_state = clear{};
+        }
+    }
 
 public:
-	bowling_t() : m_state(detail::game_start()), m_bonus(detail::bonus_t::zero), m_frameID(0), m_score(0){}
-	~bowling_t() = default;
-	auto get_state() const{
-		return m_state;
-	}
+    bowling_t(std::uint8_t frames = 10)
+        : m_state(detail::game_start()),
+          m_bonus(frames + 3, detail::bonus_t::zero),
+          m_maxFrame(frames),
+          m_frameID(0),
+          m_score(0) {}
+    ~bowling_t() = default;
+    auto get_state() const { return m_state; }
 
-	auto get_score() const{
-		return m_score;
-	}
+    auto get_score() const { return m_score; }
 
-	auto get_bonus() const{
-		return m_bonus;
-	}
+    auto get_frameID() const { return m_frameID; }
 
-	auto get_frameID() const{
-		return m_frameID;
-	}
+    auto get_bonus() const { return m_bonus[m_frameID]; }
 
-	void frame_for(const state_t& result){
-		std::visit(
-			detail::overloaded{
-				[&](const detail::game_start& state){
-					using namespace detail;
-					if (std::holds_alternative<miss>(result)){
-						auto temp = std::get<miss>(result);
-						m_score += (temp.first_point + temp.second_point);
-					}else if(std::holds_alternative<strike>(result)){
-						m_score += ten_pins;
-						m_bonus = std::get<strike>(result).bonus;
-					}else{
-						m_score += ten_pins;
-						m_bonus = std::get<spare>(result).bonus;
-					}
-					++m_frameID;
-					m_state = result;
-				},
-				[&](const detail::strike& state){
-					std::cerr << "The game is end, your score is " << m_score << '\n';
-				},
-				[&](const detail::spare& state){
-					std::cerr << "The game is end, your score is " << m_score << '\n';
-				},
-				[&](const detail::miss& state){
-					std::cerr << "The game is end, your score is " << m_score << '\n';
-				},
-				[&](const detail::game_over& state){
-					std::cerr << "The game is end, your score is " << m_score << '\n';
-				}
-			},
-			m_state);
-	}
+    auto frame_for(const state_t& result) {
+        ++m_frameID;
+        std::visit(
+            detail::overloaded{
+                [&](detail::game_start state) { normal_stage(result); },
+                [&](const detail::strike& state) { normal_stage(result); },
+                [&](const detail::spare& state) { normal_stage(result); },
+                [&](const detail::miss& state) { normal_stage(result); },
+                [&](const detail::clear& state) { clear_stage(result); },
+                [&](const detail::game_over& state) {
+                    std::cerr << "The game is end, your score is " << m_score
+                              << '\n';
+                }},
+            m_state);
+        return m_state;
+    }
 };

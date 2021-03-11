@@ -19,6 +19,6 @@ enable_testing()
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory(Tennis)
-add_subdirectory(LeapYear)
 add_subdirectory(Bowling)
+add_subdirectory(LeapYear)
+add_subdirectory(Tennis)
