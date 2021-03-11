@@ -100,6 +100,49 @@ private:
         }
     }
 
+    inline void normal_stage(const state_t& result) {
+        using namespace detail;
+        if (std::holds_alternative<miss>(result)) {
+            auto temp = std::get<miss>(result);
+            m_score += temp.first_score + temp.second_score;
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+            m_state = m_frameID < m_maxFrame ? result : game_over{};
+        } else if (std::holds_alternative<strike>(result)) {
+            m_score += TEN_PINS;
+            m_bonus[m_frameID] = bonus_t::two;
+            clear_bonus(m_frameID, TEN_PINS);
+            m_state = m_frameID < m_maxFrame ? result : clear{};
+        } else {
+            auto temp = std::get<spare>(result);
+            m_score += TEN_PINS;
+            m_bonus[m_frameID] = bonus_t::one;
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+            m_state = m_frameID < m_maxFrame ? result : clear{};
+        }
+    }
+
+    inline void clear_stage(const state_t& result) {
+        using namespace detail;
+        if (std::holds_alternative<miss>(result)) {
+            auto temp = std::get<miss>(result);
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+        } else if (std::holds_alternative<strike>(result)) {
+            clear_bonus(m_frameID, TEN_PINS);
+        } else {
+            auto temp = std::get<spare>(result);
+            clear_bonus(m_frameID, temp.first_score);
+            clear_bonus(m_frameID, temp.second_score);
+        }
+        if (m_bonus[m_maxFrame] == bonus_t::zero) {
+            m_state = game_over{};
+        } else {
+            m_state = clear{};
+        }
+    }
+
 public:
     bowling_t(std::uint8_t frames = 10)
         : m_state(detail::game_start()),
@@ -122,114 +165,13 @@ public:
             detail::overloaded{
                 [&](detail::game_start state) {
                     using namespace detail;
-                    if (std::holds_alternative<miss>(result)) {
-                        auto temp = std::get<miss>(result);
-                        m_score += temp.first_score + temp.second_score;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                    } else if (std::holds_alternative<strike>(result)) {
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::two;
-                        clear_bonus(m_frameID, TEN_PINS);
-                    } else {
-                        auto temp = std::get<spare>(result);
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::one;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                    }
+                    normal_stage(result);
                     m_state = m_frameID < m_maxFrame ? result : clear{};
                 },
-                [&](const detail::strike& state) {
-                    using namespace detail;
-                    if (std::holds_alternative<miss>(result)) {
-                        auto temp = std::get<miss>(result);
-                        m_score += temp.first_score + temp.second_score;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = m_frameID < m_maxFrame ? result : game_over{};
-                    } else if (std::holds_alternative<strike>(result)) {
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::two;
-                        clear_bonus(m_frameID, TEN_PINS);
-                        m_state = m_frameID < m_maxFrame ? result : clear{};
-                    } else {
-                        auto temp = std::get<spare>(result);
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::one;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = m_frameID < m_maxFrame ? result : clear{};
-                    }
-                },
-                [&](const detail::spare& state) {
-                    using namespace detail;
-                    if (std::holds_alternative<miss>(result)) {
-                        auto temp = std::get<miss>(result);
-                        m_score += temp.first_score + temp.second_score;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = m_frameID < m_maxFrame ? result : game_over{};
-                    } else if (std::holds_alternative<strike>(result)) {
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::two;
-                        clear_bonus(m_frameID, TEN_PINS);
-                        m_state = m_frameID < m_maxFrame ? result : clear{};
-                    } else {
-                        auto temp = std::get<spare>(result);
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::one;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = m_frameID < m_maxFrame ? result : clear{};
-                    }
-                },
-                [&](const detail::miss& state) {
-                    using namespace detail;
-                    if (std::holds_alternative<miss>(result)) {
-                        auto temp = std::get<miss>(result);
-                        m_score += temp.first_score + temp.second_score;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = m_frameID < m_maxFrame ? result : game_over{};
-                    } else if (std::holds_alternative<strike>(result)) {
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::two;
-                        clear_bonus(m_frameID, TEN_PINS);
-                        m_state = m_frameID < m_maxFrame ? result : clear{};
-                    } else {
-                        auto temp = std::get<spare>(result);
-                        m_score += TEN_PINS;
-                        m_bonus[m_frameID] = bonus_t::one;
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = m_frameID < m_maxFrame ? result : clear{};
-                    }
-                },
-                [&](const detail::clear& state) {
-                    using namespace detail;
-                    if (std::holds_alternative<miss>(result)) {
-                        auto temp = std::get<miss>(result);
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = game_over{};
-                    } else if (std::holds_alternative<strike>(result)) {
-                        clear_bonus(m_frameID, TEN_PINS);
-                        if (m_frameID == m_maxFrame + 2) {
-                            m_state = game_over{};
-                        }
-                    } else {
-                        auto temp = std::get<spare>(result);
-                        clear_bonus(m_frameID, temp.first_score);
-                        clear_bonus(m_frameID, temp.second_score);
-                        m_state = game_over{};
-                    }
-                    if (m_bonus[m_maxFrame] == bonus_t::zero) {
-                        m_state = game_over{};
-                    } else {
-                        m_state = clear{};
-                    }
-                },
+                [&](const detail::strike& state) { normal_stage(result); },
+                [&](const detail::spare& state) { normal_stage(result); },
+                [&](const detail::miss& state) { normal_stage(result); },
+                [&](const detail::clear& state) { clear_stage(result); },
                 [&](const detail::game_over& state) {
                     std::cerr << "The game is end, your score is " << m_score
                               << '\n';
