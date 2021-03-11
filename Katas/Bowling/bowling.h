@@ -163,11 +163,7 @@ public:
         ++m_frameID;
         std::visit(
             detail::overloaded{
-                [&](detail::game_start state) {
-                    using namespace detail;
-                    normal_stage(result);
-                    m_state = m_frameID < m_maxFrame ? result : clear{};
-                },
+                [&](detail::game_start state) { normal_stage(result); },
                 [&](const detail::strike& state) { normal_stage(result); },
                 [&](const detail::spare& state) { normal_stage(result); },
                 [&](const detail::miss& state) { normal_stage(result); },

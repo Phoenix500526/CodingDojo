@@ -235,3 +235,85 @@ TEST_F(BowlingTest, StrikeAndMissTest) {
     ASSERT_TRUE(std::holds_alternative<game_over>(state_1));
     EXPECT_EQ(bowling_first_strike.get_score(), 22);
 }
+
+TEST(SpecialCaseTest, OnlyOneFramBowling) {
+    using namespace detail;
+    bowling_t one_frame(1);
+    ASSERT_TRUE(std::holds_alternative<game_start>(one_frame.get_state()));
+    EXPECT_EQ(one_frame.get_score(), 0);
+
+    auto one_frame_miss = one_frame;
+    auto one_frame_miss_state = one_frame_miss.frame_for(miss{3, 4});
+    ASSERT_TRUE(std::holds_alternative<game_over>(one_frame_miss_state));
+    EXPECT_EQ(one_frame_miss.get_score(), 7);
+
+    auto one_frame_spare = one_frame;
+    auto one_frame_spare_state = one_frame_spare.frame_for(spare{7, 3});
+    ASSERT_TRUE(std::holds_alternative<clear>(one_frame_spare_state));
+    EXPECT_EQ(one_frame_spare.get_score(), 10);
+
+    auto one_frame_spare_miss = one_frame_spare;
+    auto one_frame_spare_miss_state =
+        one_frame_spare_miss.frame_for(miss{4, 3});
+    ASSERT_TRUE(std::holds_alternative<game_over>(one_frame_spare_miss_state));
+    EXPECT_EQ(one_frame_spare_miss.get_score(), 14);
+
+    auto one_frame_spare_spare = one_frame_spare;
+    auto one_frame_spare_spare_state =
+        one_frame_spare_spare.frame_for(spare{7, 3});
+    ASSERT_TRUE(std::holds_alternative<game_over>(one_frame_spare_spare_state));
+    EXPECT_EQ(one_frame_spare_spare.get_score(), 17);
+
+    auto one_frame_spare_strike = one_frame_spare;
+    auto one_frame_spare_strike_state =
+        one_frame_spare_strike.frame_for(strike{});
+    ASSERT_TRUE(
+        std::holds_alternative<game_over>(one_frame_spare_strike_state));
+    EXPECT_EQ(one_frame_spare_strike.get_score(), 20);
+
+    auto one_frame_strike = one_frame;
+    auto one_frame_strike_state = one_frame_strike.frame_for(strike{});
+    ASSERT_TRUE(std::holds_alternative<clear>(one_frame_strike_state));
+    EXPECT_EQ(one_frame_strike.get_score(), 10);
+
+    auto one_frame_strike_strike = one_frame_strike;
+    auto one_frame_strike_strike_state =
+        one_frame_strike_strike.frame_for(strike{});
+    ASSERT_TRUE(std::holds_alternative<clear>(one_frame_strike_strike_state));
+    EXPECT_EQ(one_frame_strike_strike.get_score(), 20);
+
+    auto one_frame_strike_strike_strike = one_frame_strike_strike;
+    auto one_frame_strike_strike_strike_state =
+        one_frame_strike_strike_strike.frame_for(strike{});
+    ASSERT_TRUE(std::holds_alternative<game_over>(
+        one_frame_strike_strike_strike_state));
+    EXPECT_EQ(one_frame_strike_strike_strike.get_score(), 30);
+
+    auto one_frame_strike_strike_spare = one_frame_strike_strike;
+    auto one_frame_strike_strike_spare_state =
+        one_frame_strike_strike_spare.frame_for(spare{8, 2});
+    ASSERT_TRUE(
+        std::holds_alternative<game_over>(one_frame_strike_strike_spare_state));
+    EXPECT_EQ(one_frame_strike_strike_spare.get_score(), 28);
+
+    auto one_frame_strike_strike_miss = one_frame_strike_strike;
+    auto one_frame_strike_strike_miss_state =
+        one_frame_strike_strike_miss.frame_for(miss{1, 1});
+    ASSERT_TRUE(
+        std::holds_alternative<game_over>(one_frame_strike_strike_miss_state));
+    EXPECT_EQ(one_frame_strike_strike_miss.get_score(), 21);
+
+    auto one_frame_strike_miss = one_frame_strike;
+    auto one_frame_strike_miss_state =
+        one_frame_strike_miss.frame_for(miss{1, 1});
+    ASSERT_TRUE(
+        std::holds_alternative<game_over>(one_frame_strike_strike_miss_state));
+    EXPECT_EQ(one_frame_strike_miss.get_score(), 12);
+
+    auto one_frame_strike_spare = one_frame_strike;
+    auto one_frame_strike_spare_state =
+        one_frame_strike_spare.frame_for(miss{1, 1});
+    ASSERT_TRUE(
+        std::holds_alternative<game_over>(one_frame_strike_spare_state));
+    EXPECT_EQ(one_frame_strike_spare.get_score(), 12);
+}
