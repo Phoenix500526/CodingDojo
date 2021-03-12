@@ -4,7 +4,6 @@
 
 using namespace std;
 
-
 class BowlingTest : public ::testing::Test {
 public:
     BowlingTest()
