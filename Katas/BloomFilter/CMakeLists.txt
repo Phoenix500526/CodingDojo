@@ -1,2 +1,3 @@
 project(BloomFilter)
-add_subdirectory(test)
+
+add_executable(WordSpellChecker WordSpellChecker.cc)
